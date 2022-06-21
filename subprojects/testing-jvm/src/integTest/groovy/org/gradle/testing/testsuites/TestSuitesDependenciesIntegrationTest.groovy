@@ -17,6 +17,7 @@
 package org.gradle.testing.testsuites
 
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
+import spock.lang.Ignore
 
 
 class TestSuitesDependenciesIntegrationTest extends AbstractIntegrationSpec {
@@ -1272,4 +1273,234 @@ class TestSuitesDependenciesIntegrationTest extends AbstractIntegrationSpec {
         succeeds 'checkConfiguration'
     }
     // endregion dependencies - file collections
+
+    // region dependencies - self-resolving dependencies
+    @Ignore("self-resolving methods not yet available in test suites")
+    def "can add localGroovy dependency to the default suite"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'groovy'
+            }
+
+            ${mavenCentralRepository()}
+
+            testing {
+                suites {
+                    test {
+                        useJUnit()
+                        dependencies {
+                            implementation localGroovy()
+                        }
+                    }
+                }
+            }
+        """
+
+        file("src/test/groovy/Tester.groovy") << """
+            import org.junit.Test
+
+            class Tester {
+                @Test
+                public void testGroovyListOperations() {
+                    List myList = ['Jack']
+                    myList << 'Jill'
+                }
+            }
+        """
+
+        expect:
+        succeeds('test')
+    }
+
+    @Ignore("self-resolving methods not yet available in test suites")
+    def "can add localGroovy dependency to a custom suite"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'groovy'
+            }
+
+            ${mavenCentralRepository()}
+
+            testing {
+                suites {
+                    integTest(JvmTestSuite) {
+                        useJUnit()
+                        dependencies {
+                            implementation localGroovy()
+                        }
+                    }
+                }
+            }
+        """
+
+        file("src/integTest/groovy/Tester.groovy") << """
+            import org.junit.Test
+
+            class Tester {
+                @Test
+                public void testGroovyListOperations() {
+                    List myList = ['Jack']
+                    myList << 'Jill'
+                }
+            }
+        """
+
+        expect:
+        succeeds('integTest')
+    }
+
+    @Ignore("self-resolving methods not yet available in test suites")
+    def "can add gradleApi dependency to default suite"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'java-library'
+            }
+
+            ${mavenCentralRepository()}
+
+            testing {
+                suites {
+                    test {
+                        useJUnit()
+                        dependencies {
+                            implementation gradleApi()
+                        }
+                    }
+                }
+            }
+        """
+
+        file("src/test/java/Tester.java") << """
+            import org.junit.Test;
+            import org.gradle.api.file.FileType;
+
+            public class Tester {
+                @Test
+                public void testGradleApiAvailability() {
+                    FileType type = FileType.FILE;
+                }
+            }
+        """
+
+        expect:
+        succeeds('test')
+    }
+
+    @Ignore("self-resolving methods not yet available in test suites")
+    def "can add gradleApi dependency to a custom suite"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'java-library'
+            }
+
+            ${mavenCentralRepository()}
+
+            testing {
+                suites {
+                    integTest(JvmTestSuite) {
+                        useJUnit()
+                        dependencies {
+                            implementation gradleApi()
+                        }
+                    }
+                }
+            }
+        """
+
+        file("src/integTest/java/Tester.java") << """
+            import org.junit.Test;
+            import org.gradle.api.file.FileType;
+
+            public class Tester {
+                @Test
+                public void testGradleApiAvailability() {
+                    FileType type = FileType.FILE;
+                }
+            }
+        """
+
+        expect:
+        succeeds('integTest')
+    }
+
+    @Ignore("self-resolving methods not yet available in test suites")
+    def "can add gradleTestKit dependency to the default suite"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'java-library'
+            }
+
+            ${mavenCentralRepository()}
+
+            testing {
+                suites {
+                    test {
+                        useJUnitJupiter()
+                        dependencies {
+                            implementation gradleTestKit()
+                        }
+                    }
+                }
+            }
+        """
+
+        file('src/test/java/Tester.java') << """
+            import org.gradle.testkit.runner.TaskOutcome;
+            import org.junit.jupiter.api.Test;
+
+            public class Tester {
+                @Test
+                public void testTestKitAvailability()  {
+                    TaskOutcome result = TaskOutcome.SUCCESS;
+                }
+            }
+        """
+
+        expect:
+        succeeds('test')
+    }
+
+    @Ignore("self-resolving methods not yet available in test suites")
+    def "can add gradleTestKit dependency to a custom suite"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'java-library'
+            }
+
+            ${mavenCentralRepository()}
+
+            testing {
+                suites {
+                    integTest(JvmTestSuite) {
+                        useJUnitJupiter()
+                        dependencies {
+                            implementation gradleTestKit()
+                        }
+                    }
+                }
+            }
+        """
+
+        file('src/integTest/java/Tester.java') << """
+            import org.gradle.testkit.runner.TaskOutcome;
+            import org.junit.jupiter.api.Test;
+
+            public class Tester {
+                @Test
+                public void testTestKitAvailability()  {
+                    TaskOutcome result = TaskOutcome.SUCCESS;
+                }
+            }
+        """
+
+        expect:
+        succeeds('integTest')
+    }
+    // endregion dependencies - self-resolving dependencies
 }
