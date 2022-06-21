@@ -1151,4 +1151,125 @@ class TestSuitesDependenciesIntegrationTest extends AbstractIntegrationSpec {
         succeeds('test')
     }
     // endregion dependencies - platforms
+
+    // region dependencies - file collections
+    def "can add file collection dependencies to the implementation, compileOnly and runtimeOnly configurations of a suite"() {
+        given:
+        buildFile << """
+        plugins {
+          id 'java-library'
+        }
+
+        testing {
+            suites {
+                test {
+                    dependencies {
+                        implementation files('libs/dummy-1.jar')
+                        compileOnly files('libs/dummy-2.jar')
+                        runtimeOnly files('libs/dummy-3.jar')
+                    }
+                }
+            }
+        }
+
+        tasks.register('checkConfiguration') {
+            dependsOn test
+            doLast {
+                def testCompileClasspathFileNames = configurations.testCompileClasspath.files*.name
+                def testRuntimeClasspathFileNames = configurations.testRuntimeClasspath.files*.name
+
+                assert testCompileClasspathFileNames.containsAll('dummy-1.jar')
+                assert testRuntimeClasspathFileNames.containsAll('dummy-1.jar')
+                assert testCompileClasspathFileNames.containsAll('dummy-2.jar')
+                assert !testRuntimeClasspathFileNames.containsAll('dummy-2.jar')
+                assert !testCompileClasspathFileNames.containsAll('dummy-3.jar')
+                assert testRuntimeClasspathFileNames.containsAll('dummy-3.jar')
+            }
+        }
+        """
+
+        file('libs/dummy-1.jar').createFile()
+        file('libs/dummy-2.jar').createFile()
+        file('libs/dummy-3.jar').createFile()
+
+        expect:
+        succeeds 'checkConfiguration'
+    }
+
+    def "can add file collection dependencies to a suite using fileTree"() {
+        given:
+        buildFile << """
+        plugins {
+          id 'java-library'
+        }
+
+        testing {
+            suites {
+                test {
+                    dependencies {
+                        implementation fileTree('libs') {
+                            include 'dummy-*.jar'
+                        }
+                    }
+                }
+            }
+        }
+
+        tasks.register('checkConfiguration') {
+            dependsOn test
+            doLast {
+                def testCompileClasspathFileNames = configurations.testCompileClasspath.files*.name
+                assert testCompileClasspathFileNames.containsAll('dummy-1.jar', 'dummy-2.jar', 'dummy-3.jar')
+            }
+        }
+        """
+
+        file('libs/dummy-1.jar').createFile()
+        file('libs/dummy-2.jar').createFile()
+        file('libs/dummy-3.jar').createFile()
+
+        expect:
+        succeeds 'checkConfiguration'
+    }
+
+    def "can add file collection dependencies to suites with actions"() {
+        given:
+        buildFile << """
+        plugins {
+          id 'java-library'
+        }
+
+        List configurationActions = []
+
+        testing {
+            suites {
+                test {
+                    dependencies {
+                        implementation(files('libs/dummy-1.jar', 'libs/dummy-2.jar')) {
+                            configurationActions << 'configured files'
+                        }
+                    }
+                }
+            }
+        }
+
+        tasks.register('checkConfiguration') {
+            dependsOn test
+            doLast {
+                def testCompileClasspathFileNames = configurations.testCompileClasspath.files*.name
+                assert testCompileClasspathFileNames.containsAll('dummy-1.jar', 'dummy-2.jar')
+
+                assert configurationActions.containsAll('configured files')
+            }
+        }
+        """
+
+        file('libs/dummy-1.jar').createFile()
+        file('libs/dummy-2.jar').createFile()
+        file('libs/dummy-3.jar').createFile()
+
+        expect:
+        succeeds 'checkConfiguration'
+    }
+    // endregion dependencies - file collections
 }
